@@ -14,7 +14,7 @@ static_version="$(grep VERSION "$bats_bin" | head -1 | cut -d'"' -f 2)"
 
 @test "tcl-build git version" {
   stub git \
-    'remote -v : echo origin https://github.com/sstephenson/tcl-build.git' \
+    'remote -v : echo origin https://github.com/manicmaniac/tcl-build.git' \
     "describe --tags HEAD : echo v1984-12-gSHA"
   run tcl-build --version
   assert_success "tcl-build 1984-12-gSHA"
@@ -23,7 +23,7 @@ static_version="$(grep VERSION "$bats_bin" | head -1 | cut -d'"' -f 2)"
 
 @test "git describe fails" {
   stub git \
-    'remote -v : echo origin https://github.com/sstephenson/tcl-build.git' \
+    'remote -v : echo origin https://github.com/manicmaniac/tcl-build.git' \
     "describe --tags HEAD : echo ASPLODE >&2; exit 1"
   run tcl-build --version
   assert_success "tcl-build ${static_version}"
