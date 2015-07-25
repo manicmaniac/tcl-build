@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+#
+# Summary: Install a Tcl version using tcl-build
+#
+# Usage: tclenv install [-f] [-kvp] <version>
+#        tclenv install [-f] [-kvp] <definition-file>
+#        tclenv install -l|--list
+#
+#   -l/--list          List all available versions
+#   -f/--force         Install even if the version appears to be installed already
+#   -s/--skip-existing Skip if the version appears to be installed already
+#
+#   tcl-build options:
+#
+#   -k/--keep          Keep source tree in $TCLENV_BUILD_ROOT after installation
+#                      (defaults to $TCLENV_ROOT/sources)
+#   -v/--verbose       Verbose mode: print compilation status to stdout
+#   -p/--patch         Apply a patch from stdin before building
+#
+# For detailed information on installing Tcl versions with
+# tcl-build, including a list of environment variables for adjusting
+# compilation, see: https://github.com/manicmaniac/tcl-build#usage
+#
+set -e
+[ -n "$TCLENV_DEBUG" ] && set -x
+
+if [ -z "$TCLENV_ROOT" ]; then
+  TCLENV_ROOT="${HOME}/.tclenv"
+fi
+
+# Add `share/tcl-build/` directory from each tclenv plugin to the list of
+# paths where build definitions are looked up.
+shopt -s nullglob
+for plugin_path in "$TCLENV_ROOT"/plugins/*/share/tcl-build; do
+  TCL_BUILD_DEFINITIONS="${TCL_BUILD_DEFINITIONS}:${plugin_path}"
+done
+export TCL_BUILD_DEFINITIONS
+shopt -u nullglob
+
+# Provide tclenv completions
+if [ "$1" = "--complete" ]; then
+  exec tcl-build --definitions
+fi
+
+# Load shared library functions
+eval "$(tcl-build --lib)"
+
+usage() {
+  tclenv-help install 2>/dev/null
+  [ -z "$1" ] || exit "$1"
+}
+
+definitions() {
+  local query="$1"
+  tcl-build --definitions | $(type -p ggrep grep | head -1) -F "$query" || true
+}
+
+indent() {
+  sed 's/^/  /'
+}
+
+unset FORCE
+unset SKIP_EXISTING
+unset KEEP
+unset VERBOSE
+unset HAS_PATCH
+
+parse_options "$@"
+for option in "${OPTIONS[@]}"; do
+  case "$option" in
+  "h" | "help" )
+    usage 0
+    ;;
+  "l" | "list" )
+    echo "Available versions:"
+    definitions | indent
+    exit
+    ;;
+  "f" | "force" )
+    FORCE=true
+    ;;
+  "s" | "skip-existing" )
+    SKIP_EXISTING=true
+    ;;
+  "k" | "keep" )
+    [ -n "${TCLENV_BUILD_ROOT}" ] || TCLENV_BUILD_ROOT="${TCLENV_ROOT}/sources"
+    ;;
+  "v" | "verbose" )
+    VERBOSE="-v"
+    ;;
+  "p" | "patch" )
+    HAS_PATCH="-p"
+    ;;
+  "version" )
+    exec tcl-build --version
+    ;;
+  * )
+    usage 1 >&2
+    ;;
+  esac
+done
+
+[ "${#ARGUMENTS[@]}" -le 1 ] || usage 1 >&2
+
+unset VERSION_NAME
+
+# The first argument contains the definition to install. If the
+# argument is missing, try to install whatever local app-specific
+# version is specified by tclenv. Show usage instructions if a local
+# version is not specified.
+DEFINITION="${ARGUMENTS[0]}"
+[ -n "$DEFINITION" ] || DEFINITION="$(tclenv-local 2>/dev/null || true)"
+[ -n "$DEFINITION" ] || usage 1 >&2
+
+# Define `before_install` and `after_install` functions that allow
+# plugin hooks to register a string of code for execution before or
+# after the installation process.
+declare -a before_hooks after_hooks
+
+before_install() {
+  local hook="$1"
+  before_hooks["${#before_hooks[@]}"]="$hook"
+}
+
+after_install() {
+  local hook="$1"
+  after_hooks["${#after_hooks[@]}"]="$hook"
+}
+
+OLDIFS="$IFS"
+IFS=$'\n' scripts=(`tclenv-hooks install`)
+IFS="$OLDIFS"
+for script in "${scripts[@]}"; do source "$script"; done
+
+
+# Set VERSION_NAME from $DEFINITION, if it is not already set. Then
+# compute the installation prefix.
+[ -n "$VERSION_NAME" ] || VERSION_NAME="${DEFINITION##*/}"
+PREFIX="${TCLENV_ROOT}/versions/${VERSION_NAME}"
+
+[ -d "${PREFIX}" ] && PREFIX_EXISTS=1
+
+# If the installation prefix exists, prompt for confirmation unless
+# the --force option was specified.
+if [ -d "${PREFIX}/bin" ]; then
+  if [ -z "$FORCE" ] && [ -z "$SKIP_EXISTING" ]; then
+    echo "tclenv: $PREFIX already exists" >&2
+    read -p "continue with installation? (y/N) "
+
+    case "$REPLY" in
+    y* | Y* ) ;;
+    * ) exit 1 ;;
+    esac
+  elif [ -n "$SKIP_EXISTING" ]; then
+    # Since we know the tcl version is already installed, and are opting to
+    # not force installation of existing versions, we just `exit 0` here to
+    # leave things happy
+    exit 0
+  fi
+fi
+
+# If TCLENV_BUILD_ROOT is set, always pass keep options to tcl-build.
+if [ -n "${TCLENV_BUILD_ROOT}" ]; then
+  export TCL_BUILD_BUILD_PATH="${TCLENV_BUILD_ROOT}/${VERSION_NAME}"
+  KEEP="-k"
+fi
+
+# Set TCL_BUILD_CACHE_PATH to $TCLENV_ROOT/cache, if the directory
+# exists and the variable is not already set.
+if [ -z "${TCL_BUILD_CACHE_PATH}" ] && [ -d "${TCLENV_ROOT}/cache" ]; then
+  export TCL_BUILD_CACHE_PATH="${TCLENV_ROOT}/cache"
+fi
+
+# Default TCLENV_VERSION to the globally-specified Tcl version. (The
+# REE installer requires an existing Tcl installation to run. An
+# unsatisfied local .tcl-version file can cause the installer to
+# fail.)
+export TCLENV_VERSION="$(tclenv-global 2>/dev/null || true)"
+
+
+# Execute `before_install` hooks.
+for hook in "${before_hooks[@]}"; do eval "$hook"; done
+
+# Plan cleanup on unsuccessful installation.
+cleanup() {
+  [ -z "${PREFIX_EXISTS}" ] && rm -rf "$PREFIX"
+}
+
+trap cleanup SIGINT
+
+# Invoke `tcl-build` and record the exit status in $STATUS.
+STATUS=0
+tcl-build $KEEP $VERBOSE $HAS_PATCH "$DEFINITION" "$PREFIX" || STATUS="$?"
+
+# Display a more helpful message if the definition wasn't found.
+if [ "$STATUS" == "2" ]; then
+  { candidates="$(definitions "$DEFINITION")"
+    here="$(dirname "${0%/*}")"
+    if [ -n "$candidates" ]; then
+      echo
+      echo "The following versions contain \`$DEFINITION' in the name:"
+      echo "$candidates" | indent
+    fi
+    echo
+    echo "See all available versions with \`tclenv install --list'."
+    echo
+    echo -n "If the version you need is missing, try upgrading tcl-build"
+    if [ "$here" != "${here#$(brew --prefix 2>/dev/null)}" ]; then
+      printf ":\n\n"
+      echo "  brew update && brew upgrade tcl-build"
+    elif [ -d "${here}/.git" ]; then
+      printf ":\n\n"
+      echo "  cd ${here} && git pull && cd -"
+    else
+      printf ".\n"
+    fi
+  } >&2
+fi
+
+# Execute `after_install` hooks.
+for hook in "${after_hooks[@]}"; do eval "$hook"; done
+
+# Run `tclenv-rehash` after a successful installation.
+if [ "$STATUS" == "0" ]; then
+  tclenv-rehash
+else
+  cleanup
+fi
+
+exit "$STATUS"
