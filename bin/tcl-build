@@ -194,9 +194,11 @@ install_package_using() {
 
 make_package() {
   local package_name="$1"
-  shift
+  local package_dirname="$2"
+  shift 2
 
-  pushd "$package_name" >&4
+  { pushd "$package_name" || pushd "$package_dirname"
+  } >&4
   before_install_package "$package_name"
   build_package "$package_name" $*
   after_install_package "$package_name"
@@ -496,6 +498,7 @@ build_package_standard() {
   local PACKAGE_MAKE_INSTALL_OPTS="${package_var_name}_MAKE_INSTALL_OPTS"
   local PACKAGE_MAKE_INSTALL_OPTS_ARRAY="${package_var_name}_MAKE_INSTALL_OPTS_ARRAY[@]"
   local PACKAGE_CFLAGS="${package_var_name}_CFLAGS"
+  local PLATFORM_SPECIFIC_SRC_PATH="unix"
 
   [ "$package_var_name" = "TCL" ] && use_homebrew_readline || true
 
@@ -505,12 +508,16 @@ build_package_standard() {
     if [ -z "$CC" ] && [ "$(uname -s)" = "Darwin" ] && [ "$(osx_version)" -ge 1010 ]; then
       export CC=clang
     fi
+    pushd "${PLATFORM_SPECIFIC_SRC_PATH}"
     ${!PACKAGE_CONFIGURE:-./configure} --prefix="${!PACKAGE_PREFIX_PATH:-$PREFIX_PATH}" \
       $CONFIGURE_OPTS ${!PACKAGE_CONFIGURE_OPTS} "${!PACKAGE_CONFIGURE_OPTS_ARRAY}" || return 1
+    popd
   ) >&4 2>&1
 
-  { "$MAKE" $MAKE_OPTS ${!PACKAGE_MAKE_OPTS} "${!PACKAGE_MAKE_OPTS_ARRAY}"
+  { pushd "${PLATFORM_SPECIFIC_SRC_PATH}"
+    "$MAKE" $MAKE_OPTS ${!PACKAGE_MAKE_OPTS} "${!PACKAGE_MAKE_OPTS_ARRAY}"
     "$MAKE" install $MAKE_INSTALL_OPTS ${!PACKAGE_MAKE_INSTALL_OPTS} "${!PACKAGE_MAKE_INSTALL_OPTS_ARRAY}"
+    popd
   } >&4 2>&1
 }
 
@@ -1202,7 +1209,7 @@ fi
 
 SEED="$(date "+%Y%m%d%H%M%S").$$"
 LOG_PATH="${TMP}/tcl-build.${SEED}.log"
-TCL_BIN="${PREFIX_PATH}/bin/tcl"
+TCL_BIN="${PREFIX_PATH}/bin/tclsh"
 CWD="$(pwd)"
 
 if [ -z "$TCL_BUILD_BUILD_PATH" ]; then
