@@ -1,13 +1,13 @@
 # tcl-build
 
-tcl-build is an [tclenv](https://github.com/sstephenson/tclenv) plugin that
+tcl-build is an [tclenv](https://github.com/manicmaniac/tclenv) plugin that
 provides an `tclenv install` command to compile and install different versions
 of Tcl on UNIX-like systems.
 
 You can also use tcl-build without tclenv in environments where you need
 precise control over Tcl version installation.
 
-See the [list of releases](https://github.com/sstephenson/tcl-build/releases)
+See the [list of releases](https://github.com/manicmaniac/tcl-build/releases)
 for changes in each version.
 
 
@@ -18,7 +18,7 @@ for changes in each version.
 Installing tcl-build as an tclenv plugin will give you access to the `tclenv
 install` command.
 
-    git clone https://github.com/sstephenson/tcl-build.git ~/.tclenv/plugins/tcl-build
+    git clone https://github.com/manicmaniac/tcl-build.git ~/.tclenv/plugins/tcl-build
 
 This will install the latest development version of tcl-build into the
 `~/.tclenv/plugins/tcl-build` directory. From that directory, you can check out
@@ -31,7 +31,7 @@ Installing tcl-build as a standalone program will give you access to the
 `tcl-build` command for precise control over Tcl version installation. If you
 have tclenv installed, you will also be able to use the `tclenv install` command.
 
-    git clone https://github.com/sstephenson/tcl-build.git
+    git clone https://github.com/manicmaniac/tcl-build.git
     cd tcl-build
     ./install.sh
 
@@ -62,7 +62,7 @@ Or, if you would like to install the latest development release:
 ## Usage
 
 Before you begin, you should ensure that your build environment has the proper
-system dependencies for compiling the wanted Tcl version (see our [recommendations](https://github.com/sstephenson/tcl-build/wiki#suggested-build-environment)).
+system dependencies for compiling the wanted Tcl version (see our [recommendations](https://github.com/manicmaniac/tcl-build/wiki#suggested-build-environment)).
 
 ### Using `tclenv install` with tclenv
 
@@ -103,7 +103,7 @@ versions of Tcl that are not yet supported by tcl-build.
 See the [tcl-build built-in definitions][definitions] as a starting point for
 custom definition files.
 
-[definitions]: https://github.com/sstephenson/tcl-build/tree/master/share/tcl-build
+[definitions]: https://github.com/manicmaniac/tcl-build/tree/master/share/tcl-build
 
 ### Special environment variables
 
@@ -207,10 +207,10 @@ variable when using `--keep` with `tcl-build`.
 
 Please see the [tcl-build wiki][wiki] for solutions to common problems.
 
-[wiki]: https://github.com/sstephenson/tcl-build/wiki
+[wiki]: https://github.com/manicmaniac/tcl-build/wiki
 
 If you can't find an answer on the wiki, open an issue on the [issue
-tracker](https://github.com/sstephenson/tcl-build/issues). Be sure to include
+tracker](https://github.com/manicmaniac/tcl-build/issues). Be sure to include
 the full build log for build failures.
 
 
