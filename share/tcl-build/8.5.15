@@ -1,3 +1,4 @@
 install_package "tcl-8.5.15" "http://prdownloads.sourceforge.net/tcl/tcl8.5.15-src.tar.gz#f3df162f92c69b254079c4d0af7a690f"
+install_package "tk-8.5.15" "http://downloads.sourceforge.net/project/tcl/Tcl/8.5.15/tk8.5.15-src.tar.gz#55b8e33f903210a4e1c8bce0f820657f" tk
 install_package "tcllib-1.17" "http://downloads.sourceforge.net/project/tcllib/tcllib/1.17/tcllib-1.17.tar.gz#4c75fbfbb518f8990fcd4686b976bd70" tcllib
 

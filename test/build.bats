@@ -13,6 +13,10 @@ setup() {
   stub curl false
 }
 
+resolve_link() {
+  $(type -p greadlink readlink | head -1) "$1"
+}
+
 executable() {
   local file="$1"
   mkdir -p "${file%/*}"
@@ -47,8 +51,10 @@ OUT
 }
 
 stub_make_install() {
+  local bin_name="$1"
+
   stub "$MAKE" \
-    " : echo \"$MAKE \$@\" >> build.log && mkdir '$INSTALL_ROOT/bin' && touch '$INSTALL_ROOT/bin/tclsh8.6'" \
+    " : echo \"$MAKE \$@\" >> build.log && mkdir '$INSTALL_ROOT/bin' && touch '$INSTALL_ROOT/bin/$bin_name'" \
     "install : echo \"$MAKE \$@\" >> build.log && cat build.log >> '$INSTALL_ROOT/build.log'"
 }
 
@@ -62,7 +68,7 @@ assert_build_log() {
 
   stub uname '-s : echo Darwin'
   stub sysctl false
-  stub_make_install
+  stub_make_install "tclsh8.6"
 
   export -n MAKE_OPTS
   run_inline_definition <<DEF
@@ -85,7 +91,7 @@ OUT
 
   stub uname '-s : echo Darwin'
   stub sysctl '-n hw.ncpu : echo 4'
-  stub_make_install
+  stub_make_install "tclsh8.6"
 
   export -n MAKE_OPTS
   run_inline_definition <<DEF
@@ -109,7 +115,7 @@ OUT
 
   stub uname '-s : echo FreeBSD'
   stub sysctl '-n hw.ncpu : echo 1'
-  stub_make_install
+  stub_make_install "tclsh8.6"
 
   export -n MAKE_OPTS
   run_inline_definition <<DEF
@@ -131,7 +137,7 @@ OUT
 @test "setting TCL_MAKE_INSTALL_OPTS to a multi-word string" {
   cached_tarball "tcl-8.6.4"
 
-  stub_make_install
+  stub_make_install "tclsh8.6"
 
   export TCL_MAKE_INSTALL_OPTS="DOGE=\"such wow\""
   run_inline_definition <<DEF
@@ -151,7 +157,7 @@ OUT
 @test "setting MAKE_INSTALL_OPTS to a multi-word string" {
   cached_tarball "tcl-8.6.4"
 
-  stub_make_install
+  stub_make_install "tclsh8.6"
 
   export MAKE_INSTALL_OPTS="DOGE=\"such wow\""
   run_inline_definition <<DEF
@@ -181,7 +187,7 @@ OUT
   cached_tarball "tcl-8.6.4"
 
   stub uname "-s : echo FreeBSD" "-r : echo 9.1"
-  MAKE=gmake stub_make_install
+  MAKE=gmake stub_make_install "tclsh8.6"
 
   MAKE= install_fixture definitions/vanilla-tcl
   assert_success
@@ -194,12 +200,15 @@ OUT
   cached_tarball "tcl-8.6.4"
 
   stub uname "-s : echo FreeBSD" "-r : echo 10.0-RELEASE"
-  stub_make_install
+  stub_make_install "tclsh8.6"
 
   MAKE= install_fixture definitions/vanilla-tcl
   assert_success
 
   unstub uname
+
+  resolve_link $INSTALL_ROOT/bin/tclsh
+  assert_success
 }
 
 @test "can use TCL_CONFIGURE to apply a patch" {
@@ -212,7 +221,7 @@ exec ./configure "\$@"
 CONF
 
   stub apply 'echo apply "$@" >> build.log'
-  stub_make_install
+  stub_make_install "tclsh8.6"
 
   export TCL_CONFIGURE="${TMP}/custom-configure"
   run_inline_definition <<DEF
@@ -243,6 +252,27 @@ OUT
 
   run "$INSTALL_ROOT/bin/package" "world"
   assert_success "hello world"
+}
+
+@test "Tk build" {
+  cached_tarball "tk-8.6.4"
+
+  stub_make_install "wish8.6"
+
+  run_inline_definition <<DEF
+install_package "tk-8.6.4" "http://downloads.sourceforge.net/project/tcl/Tcl/8.6.4/tk8.6.4-src.tar.gz#261754d7dc2a582f00e35547777e1fea" "tk"
+DEF
+  assert_success
+
+  unstub make
+
+  assert_build_log <<OUT
+tk-8.6.4: --prefix=$INSTALL_ROOT
+make -j 2
+make install
+OUT
+  resolve_link $INSTALL_ROOT/bin/wish
+  assert_success
 }
 
 @test "non-writable TMPDIR aborts build" {

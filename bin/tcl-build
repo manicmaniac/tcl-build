@@ -546,10 +546,21 @@ build_package_standard() {
     "$MAKE" install $MAKE_INSTALL_OPTS ${!PACKAGE_MAKE_INSTALL_OPTS} "${!PACKAGE_MAKE_INSTALL_OPTS_ARRAY}"
     popd
   } >&4 2>&1
-  { pushd "${PREFIX_PATH}/bin"
-    if [ ! -f tclsh ] && [ -f tclsh?.? ]; then
-        echo "Creating symlink for tclsh"
-        ln -fs tclsh?.? tclsh
+  { local bin_name
+    case "$package_var_name" in
+      "TCL")
+        bin_name="tclsh"
+        ;;
+      "TK")
+        bin_name="wish"
+        ;;
+      *)
+        return 0;
+    esac
+    pushd "${PREFIX_PATH}/bin"
+    if [ ! -f "$bin_name" ] && [ -f "$bin_name"?.? ]; then
+        echo "Creating symlink for $bin_name"
+        ln -fs "$bin_name"?.? "$bin_name"
     fi
     popd
   } >&4 2>&1
@@ -559,6 +570,14 @@ build_package_tcllib() {
   { ./configure --prefix="$PREFIX_PATH"
     "$MAKE" install
   } >&4 2>&1
+}
+
+build_package_tk() {
+  local package_name="$1"
+
+  TK_PACKAGE_CFLAGS="-I${PREFIX_PATH}/include" \
+  TK_PACKAGE_CONFIGURE_OPTS="--with-tcl=${PREFIX_PATH}/lib" \
+    build_package_standard "$package_name"
 }
 
 build_package_autoconf() {
