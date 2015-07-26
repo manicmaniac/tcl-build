@@ -60,7 +60,7 @@ DEF
   stub cc 'false'
   stub brew 'false'
   stub make \
-    'echo make $@' \
+    'echo make $@ && mkdir '$INSTALL_ROOT'/bin && touch '$INSTALL_ROOT'/bin/tclsh8.6' \
     'echo make $@'
 
   mkdir unix

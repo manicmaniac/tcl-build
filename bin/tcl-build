@@ -546,6 +546,13 @@ build_package_standard() {
     "$MAKE" install $MAKE_INSTALL_OPTS ${!PACKAGE_MAKE_INSTALL_OPTS} "${!PACKAGE_MAKE_INSTALL_OPTS_ARRAY}"
     popd
   } >&4 2>&1
+  { pushd "${PREFIX_PATH}/bin"
+    if [ ! -f tclsh ] && [ -f tclsh?.? ]; then
+        echo "Creating symlink for tclsh"
+        ln -fs tclsh?.? tclsh
+    fi
+    popd
+  } >&4 2>&1
 }
 
 build_package_tcllib() {

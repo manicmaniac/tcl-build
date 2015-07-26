@@ -48,7 +48,7 @@ OUT
 
 stub_make_install() {
   stub "$MAKE" \
-    " : echo \"$MAKE \$@\" >> build.log" \
+    " : echo \"$MAKE \$@\" >> build.log && mkdir '$INSTALL_ROOT/bin' && touch '$INSTALL_ROOT/bin/tclsh8.6'" \
     "install : echo \"$MAKE \$@\" >> build.log && cat build.log >> '$INSTALL_ROOT/build.log'"
 }
 
