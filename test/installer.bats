@@ -13,8 +13,8 @@ load test_helper
   assert [ -x bin/tclenv-install ]
   assert [ -x bin/tclenv-uninstall ]
 
-  assert [ -e share/tcl-build/1.8.6-p383 ]
-  assert [ -e share/tcl-build/ree-1.8.7-2012.02 ]
+  assert [ -e share/tcl-build/8.6.4 ]
+  assert [ -e share/tcl-build/8.0.2 ]
 }
 
 @test "build definitions don't have the executable bit" {
@@ -33,13 +33,13 @@ OUT
   cd "$TMP"
   mkdir -p bin share/tcl-build
   touch bin/tcl-build
-  touch share/tcl-build/1.8.6-p383
+  touch share/tcl-build/8.6.4
 
   PREFIX="$PWD" run "${BATS_TEST_DIRNAME}/../install.sh"
   assert_success ""
 
   assert [ -x bin/tcl-build ]
-  run grep "install_package" share/tcl-build/1.8.6-p383
+  run grep "install_package" share/tcl-build/8.6.4
   assert_success
 }
 

@@ -6,8 +6,8 @@ NUM_DEFINITIONS="$(ls "$BATS_TEST_DIRNAME"/../share/tcl-build | wc -l)"
 @test "list built-in definitions" {
   run tcl-build --definitions
   assert_success
-  assert_output_contains "1.9.3-p194"
-  assert_output_contains "jtcl-1.7.9"
+  assert_output_contains "8.6.4"
+  assert_output_contains "8.0.2"
   assert [ "${#lines[*]}" -eq "$NUM_DEFINITIONS" ]
 }
 
@@ -55,7 +55,7 @@ NUM_DEFINITIONS="$(ls "$BATS_TEST_DIRNAME"/../share/tcl-build | wc -l)"
   echo true > "${TMP}/definitions/1.9.3-test"
   mkdir -p "${TMP}/other"
   echo false > "${TMP}/other/1.9.3-test"
-  run bin/tcl-build "1.9.3-test" "${TMP}/install"
+  run tcl-build "1.9.3-test" "${TMP}/install"
   assert_success ""
 }
 
