@@ -1,5 +1,7 @@
 # tcl-build
 
+[![Build Status](https://travis-ci.org/manicmaniac/tcl-build.svg)](https://travis-ci.org/manicmaniac/tcl-build)
+
 tcl-build is an [tclenv](https://github.com/manicmaniac/tclenv) plugin that
 provides an `tclenv install` command to compile and install different versions
 of Tcl on UNIX-like systems.
