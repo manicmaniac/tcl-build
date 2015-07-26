@@ -14,7 +14,7 @@ load test_helper
   assert [ -x bin/tclenv-uninstall ]
 
   assert [ -e share/tcl-build/8.6.4 ]
-  assert [ -e share/tcl-build/8.0.2 ]
+  assert [ -e share/tcl-build/8.5.15 ]
 }
 
 @test "build definitions don't have the executable bit" {

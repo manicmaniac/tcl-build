@@ -7,7 +7,7 @@ NUM_DEFINITIONS="$(ls "$BATS_TEST_DIRNAME"/../share/tcl-build | wc -l)"
   run tcl-build --definitions
   assert_success
   assert_output_contains "8.6.4"
-  assert_output_contains "8.0.2"
+  assert_output_contains "8.5.15"
   assert [ "${#lines[*]}" -eq "$NUM_DEFINITIONS" ]
 }
 
